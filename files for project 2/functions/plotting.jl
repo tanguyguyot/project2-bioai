@@ -9,13 +9,13 @@ function plot_patient_positions(instance::ProblemInstance)
     scatter(x, y, labels=labels, title="Patient positions", xlabel="x", ylabel="y")
 end
 
-function plot_routes(routes::Individual, instance::ProblemInstance)
-    routes = routes.routes
+function plot_routes(individual::Individual, instance::ProblemInstance)
+    amount_of_unempty_routes = length([route for route in individual.routes if !isempty(route)])
     plot()
     x = [instance.patients[string(patient)]["x_coord"] for patient in 1:length(instance.patients)]
     y = [instance.patients[string(patient)]["y_coord"] for patient in 1:length(instance.patients)]
     scatter!(x, y, title="Patient positions")
-    for (i, route) in enumerate(routes)
+    for (i, route) in enumerate(individual.routes)
         # Patients coords
         x = [instance.patients[string(patient)]["x_coord"] for patient in route]
         y = [instance.patients[string(patient)]["y_coord"] for patient in route]
@@ -30,6 +30,11 @@ function plot_routes(routes::Individual, instance::ProblemInstance)
         plot!(x, y, ms=5, legend=false)
     end
     display(plot!(title="Routes"))
+    println("Plotting $(amount_of_unempty_routes)) routes for a travel time of $(individual.total_travel_time)")
+end
+
+function plot_travels_over_time(travel_times)
+    display(plot(travel_times))
 end
 
 function output_solution(individual::Individual, instance::ProblemInstance, filename::String)

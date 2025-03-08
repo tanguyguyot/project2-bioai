@@ -4,8 +4,8 @@ include("evaluate.jl")
 
 function crossover(parent1::Individual, parent2::Individual, instance::ProblemInstance, fitness_cache::Dict{UInt64, Individual}, penalty_cost::Float64=350.0)::Tuple{Individual, Individual}
     # convert into list of routes to identify routes
-    routes1 = parent1.routes
-    routes2 = parent2.routes
+    routes1 = copy(parent1.routes)
+    routes2 = copy(parent2.routes)
     available_routes1 = [i for i in 1:length(routes1) if !isempty(routes1[i])]
     available_routes2 = [i for i in 1:length(routes2) if !isempty(routes2[i])]
 

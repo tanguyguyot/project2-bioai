@@ -4,7 +4,7 @@ include("structures.jl")
 
 # This mutation function swaps two patients of two routes
 function mutate4!(individual::Individual, instance::ProblemInstance)
-    routes = individual.routes
+    routes = copy(individual.routes)
     nb_nurses = length(routes)
     capacity = instance.capacity_nurse
     # Two random routes
@@ -34,7 +34,7 @@ end
 
 # This mutation function shuffles a subset of a nurse's route
 function mutate5!(individual::Individual, max_subset_size::Int=4)
-    routes = individual.routes
+    routes = copy(individual.routes)
     available_routes = [i for i in 1:length(routes) if !isempty(routes[i])]
     # random route
     route_idx = rand(available_routes)
@@ -48,7 +48,7 @@ end
 
 # This mutation function is inserting a patient in someone else's route
 function mutate6!(individual::Individual, instance::ProblemInstance)
-    routes = individual.routes
+    routes = copy(individual.routes)
     nb_nurses = length(routes)
     capacity = instance.capacity_nurse
     available_routes = [i for i in 1:nb_nurses if !isempty(routes[i])]
@@ -72,7 +72,7 @@ end
 
 # This mutation splits a route into two, and puts half of the patients in a new route
 function mutate7!(individual::Individual)
-    routes = individual.routes
+    routes = copy(individual.routes)
     nb_nurses = length(routes)
     empty_routes = [i for i in 1:nb_nurses if isempty(routes[i])]
     # Check if there are empty routes ; if not return because can't split
@@ -85,7 +85,33 @@ function mutate7!(individual::Individual)
     # Split sequentially
     indexes_to_remove = [2*i for i in 1:div(length(route_to_split), 2)]
     for idx in reverse(indexes_to_remove)
-        push!(routes[empty_route_to_fill_idx], splice!(route_to_split, idx))
+        push!(individual.routes[empty_route_to_fill_idx], splice!(route_to_split, idx))
     end
+end
+
+# This mutate will merge two routes
+function mutate8!(individual::Individual)
+    routes = copy(individual.routes)
+    nb_nurses = length(routes)
+    available_routes = [i for i in 1:nb_nurses if !isempty(routes[i])]
+    # Select two random routes
+    route1_idx = rand(available_routes)
+    route2_idx = rand(setdiff(available_routes, [route1_idx]))
+    # Merge the two routes sequentially
+    merged_route = []
+    length_difference = abs(length(routes[route1_idx]) - length(routes[route2_idx]))
+    for i in min(length(routes[route1_idx]), length(routes[route2_idx]))
+        push!(merged_route, routes[route1_idx][i])
+        push!(merged_route, routes[route2_idx][i])
+    end
+    if length_difference > 1
+        if length(routes[route1_idx]) > length(routes[route2_idx])
+            push!(merged_route, routes[route1_idx][end])
+        else
+            push!(merged_route, routes[route2_idx][end])
+        end
+    end
+    individual.routes[route1_idx] = merged_route
+    individual.routes[route2_idx] = []
 end
 

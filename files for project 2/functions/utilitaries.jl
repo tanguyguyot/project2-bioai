@@ -12,7 +12,7 @@ end
 
 # Inserts a patient to the best neighbour according to evaluate function
 function insert_to_best_neighbour!(patient::Int64, individual::Individual, instance::ProblemInstance, fitness_cache::Dict{UInt64, Individual}, penalty_cost::Float64=350.0)
-    routes = individual.routes
+    routes = copy(individual.routes)
     lowest_score = Inf
     best_neighbour_idx = 0
     best_route_idx = 0
@@ -34,9 +34,9 @@ function insert_to_best_neighbour!(patient::Int64, individual::Individual, insta
     insert!(individual.routes[best_route_idx], best_neighbour_idx, patient)
 end
 
-# Inserts a patient to the best neighbours ; also checks if have capacity
+# Inserts a patient to the best neighbours ; also checks if have capacity ; outdated for now
 function insert_to_closest_neighbour!(patient::Int64, individual::Individual, instance::ProblemInstance)
-    routes = individual.routes
+    routes = copy(individual.routes)
     lowest_distance = Inf
     best_neighbour = 0
     best_neighbour_idx = 0
