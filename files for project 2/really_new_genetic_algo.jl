@@ -485,7 +485,7 @@ function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64
             println("Same best solution for more than 5 generations, adding diversity")
             next_population = vcat(next_population, [random_solution(instance) for _ in 1:div(population_size, 2)], [position_cluster_solution(instance) for _ in 1:div(population_size, 2)])
         end
-        for i in 1:(child_factor * population_size)
+        @threads for i in 1:(child_factor * population_size)
             # Select two parents
             parent1_idx, parent2_idx = tournament_selection(population, instance, fitness_cache, tournament_size, penalty_cost)
             parent1 = population[parent1_idx]
@@ -505,7 +505,7 @@ function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64
             mutation_rate > rand() ? mutate7!(child2) : nothing 
             
             # Add to offsprings
-            #=begin
+            begin
                 lock(locker)
                 try
                     push!(next_population, child1)
@@ -513,7 +513,7 @@ function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64
                 finally
                     unlock(locker)
                 end
-            end=#
+            end
             push!(next_population, child1)
             push!(next_population, child2)
         end
@@ -562,12 +562,14 @@ Random.seed!(1234)
 
 # Testing island niching
 
+#=
 best_solution91, population91, fitnesses91, scores91, average_fitnesses91 = genetic_algorithm(data_instance9, [1.0, 0, 0.0], 100, 300 , 3, 4, 0.1, 10.0)
 best_solution92, population92, fitnesses92, scores92, average_fitnesses92 = genetic_algorithm(data_instance9, [0.0, 1.0, 0.0], 100, 300, 3, 4, 0.1, 10.0)
 best_solution93, population93, fitnesses93, scores93, average_fitnesses93 = genetic_algorithm(data_instance9, [0.0, 0.0, 1.0], 100, 300, 3, 4, 0.1, 10.0)
 
 best_solution90, population90, fitnesses90, scores90, average_fitnesses90 = genetic_algorithm(data_instance9, [0.5, 0.5, 0.0], 100, 900, 3, 4, 0.05, 10.0, true, [population91, population92, population93])
-
+BEST : 1562
+=# 
 
 function plot_patient_positions(instance::ProblemInstance)
     x = [instance.patients[string(patient)]["x_coord"] for patient in 1:length(instance.patients)]
