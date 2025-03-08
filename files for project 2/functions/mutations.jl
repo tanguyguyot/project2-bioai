@@ -100,17 +100,55 @@ function mutate8!(individual::Individual)
     # Merge the two routes sequentially
     merged_route = []
     length_difference = abs(length(routes[route1_idx]) - length(routes[route2_idx]))
-    for i in min(length(routes[route1_idx]), length(routes[route2_idx]))
+    min_length = min(length(routes[route1_idx]), length(routes[route2_idx]))
+    for i in 1:min_length
         push!(merged_route, routes[route1_idx][i])
         push!(merged_route, routes[route2_idx][i])
     end
-    if length_difference > 1
+    if length_difference > 0
         if length(routes[route1_idx]) > length(routes[route2_idx])
-            push!(merged_route, routes[route1_idx][end])
+            append!(merged_route, routes[route1_idx][min_length+1:end])
         else
-            push!(merged_route, routes[route2_idx][end])
+            append!(merged_route, routes[route2_idx][min_length+1:end])
         end
     end
+    # check we got all the patients
+    if length(merged_route) != length(routes[route1_idx]) + length(routes[route2_idx])
+        println("Error in merging routes")
+        return
+    end
+    individual.routes[route1_idx] = merged_route
+    individual.routes[route2_idx] = []
+end
+
+# This function splits a route in half, not sequentially
+function mutate9!(individual::Individual)
+    routes = copy(individual.routes)
+    nb_nurses = length(routes)
+    empty_routes = [i for i in 1:nb_nurses if isempty(routes[i])]
+    # if no empty route, return because not useful
+    isempty(empty_routes) && return
+    # Select an empty route id to fill in
+    empty_route_idx = empty_routes[1]
+    # Select one of the longest routes
+    route_to_split_idx = argmax([length(route) for route in routes])
+    route = routes[route_to_split_idx]
+    # Split the route in half
+    split_idx = div(length(route), 2)
+    individual.routes[route_to_split_idx] = route[1:split_idx]
+    individual.routes[empty_route_idx] = route[split_idx+1:end]
+end
+
+# This mutation will merge two routes
+function mutate10!(individual::Individual)
+    routes = copy(individual.routes)
+    nb_nurses = length(routes)
+    available_routes = [i for i in 1:nb_nurses if !isempty(routes[i])]
+    # Select two random routes
+    route1_idx = rand(available_routes)
+    route2_idx = rand(setdiff(available_routes, [route1_idx]))
+    # Merge the two routes
+    merged_route = vcat(routes[route1_idx], routes[route2_idx])
     individual.routes[route1_idx] = merged_route
     individual.routes[route2_idx] = []
 end

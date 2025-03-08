@@ -4,6 +4,15 @@ function hash_individual(individual::Individual)::UInt64
     return hash(individual.routes)
 end
 
+function check_unicity_of_routes(individual::Individual, instance::ProblemInstance)::Bool
+    routes = vcat(individual.routes...)
+    if sum(routes) != sum(1:length(instance.patients))
+        println("problème d'unicité des routes : ", sum(routes), " != ", sum(1:length(instance.patients)))
+        return false
+    end
+    return true
+end
+
 function get_travel_time(i::Int, j::Int, instance::ProblemInstance)
     travel_time_matrix = instance.travel_time_matrix
     # adds +1 because of the depot which is 0
@@ -11,19 +20,20 @@ function get_travel_time(i::Int, j::Int, instance::ProblemInstance)
 end
 
 # Inserts a patient to the best neighbour according to evaluate function
-function insert_to_best_neighbour!(patient::Int64, individual::Individual, instance::ProblemInstance, fitness_cache::Dict{UInt64, Individual}, penalty_cost::Float64=350.0)
+function insert_to_best_neighbour!(patient::Int64, individual::Individual, instance::ProblemInstance, fitness_cache::Dict{UInt64, Individual}, locker::ReentrantLock, penalty_cost::Float64=350.0)
     routes = copy(individual.routes)
+    available_routes = [i for i in 1:length(routes) if !isempty(routes[i])]
     lowest_score = Inf
     best_neighbour_idx = 0
     best_route_idx = 0
-    for (route_idx, route) in enumerate(routes)
-        for position in 1:length(route)+1
-            candidate_route = copy(route)
+    for route_idx in available_routes
+        for position in 1:length(routes[route_idx])+1
+            candidate_route = copy(routes[route_idx])
             # Insert patient in the route
             insert!(candidate_route, position, patient)
             # check in hashmap
             individual_hash = hash_individual(individual)
-            score = haskey(fitness_cache, individual_hash) ? score = fitness_cache[individual_hash].score : evaluate(Individual([candidate_route], 0.0, 0.0, 0.0, false), instance, fitness_cache, 1.0, max(div(penalty_cost, 10), 1.0), penalty_cost, penalty_cost).score
+            score = haskey(fitness_cache, individual_hash) ? score = fitness_cache[individual_hash].score : evaluate(Individual([candidate_route], 0.0, 0.0, 0.0, false), instance, fitness_cache, locker, 1.0, max(div(penalty_cost, 10), 1.0), penalty_cost, penalty_cost).score
             if score < lowest_score
                 lowest_score = score
                 best_neighbour_idx = position
@@ -79,5 +89,11 @@ function insert_to_closest_neighbour!(patient::Int64, individual::Individual, in
         patient_after = best_route[best_neighbour_idx+1]
         get_travel_time(patient_before, patient, instance) < get_travel_time(patient, patient_after, instance) ? insert!(individual.routes[best_route_idx], best_neighbour_idx, patient) : insert!(individual.routes[best_route_idx], best_neighbour_idx+1, patient)
         return
+    end
+end
+
+function output_population(population::Vector{Individual})
+    open("last_population.txt", "w") do io
+        println(io, population)
     end
 end

@@ -2,7 +2,7 @@ include("utilitaries.jl")
 include("structures.jl")
 include("evaluate.jl")
 
-function crossover(parent1::Individual, parent2::Individual, instance::ProblemInstance, fitness_cache::Dict{UInt64, Individual}, penalty_cost::Float64=350.0)::Tuple{Individual, Individual}
+function crossover(parent1::Individual, parent2::Individual, instance::ProblemInstance, fitness_cache::Dict{UInt64, Individual}, locker::ReentrantLock, penalty_cost::Float64=350.0)::Tuple{Individual, Individual}
     # convert into list of routes to identify routes
     routes1 = copy(parent1.routes)
     routes2 = copy(parent2.routes)
@@ -35,10 +35,10 @@ function crossover(parent1::Individual, parent2::Individual, instance::ProblemIn
 
     # now for each patient without a visitor, find the best insertion
     for patient in route2
-        insert_to_best_neighbour!(patient, child1, instance, fitness_cache, penalty_cost)
+        insert_to_best_neighbour!(patient, child1, instance, fitness_cache, locker, penalty_cost)
     end
     for patient in route1
-        insert_to_best_neighbour!(patient, child2, instance, fitness_cache, penalty_cost)
+        insert_to_best_neighbour!(patient, child2, instance, fitness_cache, locker, penalty_cost)
     end
     return child1, child2
 end

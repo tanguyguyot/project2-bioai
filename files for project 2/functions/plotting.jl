@@ -15,6 +15,8 @@ function plot_routes(individual::Individual, instance::ProblemInstance)
     x = [instance.patients[string(patient)]["x_coord"] for patient in 1:length(instance.patients)]
     y = [instance.patients[string(patient)]["y_coord"] for patient in 1:length(instance.patients)]
     scatter!(x, y, title="Patient positions")
+    depot_coords = (instance.depot["x_coord"], instance.depot["y_coord"])
+    scatter!([depot_coords[1]], [depot_coords[2]], ms=5)
     for (i, route) in enumerate(individual.routes)
         # Patients coords
         x = [instance.patients[string(patient)]["x_coord"] for patient in route]

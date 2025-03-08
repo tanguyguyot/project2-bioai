@@ -1,16 +1,17 @@
 include("utilitaries.jl")
 include("structures.jl")
 
-# Cluster patients based on their position
-
+# Cluster patients based on their position ; cluster number is random between 12 and 25
 function position_cluster_solution(instance::ProblemInstance)::Individual
     nb_patients = length(instance.patients)
     nb_nurses = instance.nbr_nurses
+    # random amount of clusters, though not too few routes
+     nb_clusters = rand(div(nb_nurses, 3):nb_nurses)
     coordinates = hcat([instance.patients[string(patient)]["x_coord"] for patient in 1:nb_patients], [instance.patients[string(patient)]["y_coord"] for patient in 1:nb_patients])'
-    R = kmeans(coordinates, nb_nurses)
+    R = kmeans(coordinates, nb_clusters)
     clusters = R.assignments
     routes = [[] for _ in 1:nb_nurses]
-    for cluster in 1:nb_nurses
+    for cluster in 1:nb_clusters
         patients = findall(x -> x == cluster, clusters)
         routes[cluster] = patients
     end
@@ -22,16 +23,18 @@ end
 function time_window_cluster_solution(instance::ProblemInstance)::Individual
     patients = instance.patients
     nb_patients = length(patients)
-    nb_nurses = instance.nbr_nurses # nb de clusters
+    nb_nurses = instance.nbr_nurses
+    # random amount of clusters, though not too few routes
+    nb_clusters = rand(div(nb_nurses, 3):nb_nurses)
     data = [ [(patients[string(patient)]["start_time"] + patients[string(patient)]["end_time"]) / 2, patients[string(patient)]["end_time"] - patients[string(patient)]["start_time"]] for patient in 1:nb_patients]
     data_matrix = hcat(data...)
-    R = kmeans(data_matrix, nb_nurses)
+    R = kmeans(data_matrix, nb_clusters)
     clusters = R.assignments
     clusters_and_idx = [(i, clusters[i]) for i in eachindex(clusters)]
     routes = [[] for _ in 1:nb_nurses]
     for route in routes
         # pour chaque route on ajoute chaque cluster 1 fois de 1 à 25
-        for cluster in 1:nb_nurses
+        for cluster in 1:nb_clusters
             idx = findfirst(x -> x[2] == cluster, clusters_and_idx)
             if isnothing(idx)
                 continue
@@ -49,12 +52,13 @@ end
 function random_solution(instance::ProblemInstance)::Individual
     nb_patients = length(instance.patients)
     nb_nurses = instance.nbr_nurses
+    nb_cluster = rand(div(nb_nurses, 3):nb_nurses)
     permutation = randperm(nb_patients)
-    separations = sort(sample(1:nb_patients, nb_nurses-1, replace=false))
+    separations = sort(sample(1:nb_patients, nb_cluster-1, replace=false))
     finale_routes = [[] for _ in 1:nb_nurses]
     route_counter = 1 # de 1 à 25
     for i in 1:nb_patients
-        if route_counter == 25 #last route
+        if route_counter == nb_cluster #last route
             for j in i:nb_patients
             push!(finale_routes[route_counter], permutation[j])
             end

@@ -4,14 +4,14 @@ include("plotting.jl")
 Random.seed!(1234)
 
 # 70 generations a 500 individus : 92 s
-best_solution9, population9, fitnesses9, scores9, average_fitnesses9 = @time genetic_algorithm(data_instance9, [0.4, 0.5, 0.0], 100, 1000, 3, 4, 0.08, 30.0)
+#best_solution9, population9, fitnesses9, scores9, average_fitnesses9, travel_times9 = genetic_algorithm(data_instance9, [0.3, 0.7, 0], 100, 600, 3, 4, 0.15, 15.0)
 
-plot_routes(best_solution9, data_instance9)
-
+#plot_routes(best_solution9, data_instance9)
+#plot(travel_times9)
 #=
-best_solution0, population0, fitnesses0, scores0, average_fitnesses0 = genetic_algorithm(data_instance0, [0.5, 0.5, 0.0], 70, 500, 3, 4, 0.1, 10.0)
-best_solution1, population1, fitnesses1, scores1, average_fitnesses1 = genetic_algorithm(data_instance1, [0.5, 0.5, 0.0], 70, 500, 3, 4, 0.1, 10.0)
-best_solution2, population2, fitnesses2, scores2, average_fitnesses2 = genetic_algorithm(data_instance2, [0.5, 0.5, 0.0], 70, 500, 3, 4, 0.1, 10.0)
+best_solution0, population0, fitnesses0, scores0, average_fitnesses0, travel_times0 = genetic_algorithm(data_instance0, [0.3, 0.7, 0.0], 100, 600, 3, 4, 0.1, 10.0)
+best_solution1, population1, fitnesses1, scores1, average_fitnesses1, travel_times1 = genetic_algorithm(data_instance1, [0.3, 0.7, 0.0], 100, 600, 3, 4, 0.1, 10.0)
+best_solution2, population2, fitnesses2, scores2, average_fitnesses2, travel_times2 = genetic_algorithm(data_instance2, [0.3, 0.7, 0.0], 100, 600, 3, 4, 0.1, 10.0)
 =#
 
 # Test data 0

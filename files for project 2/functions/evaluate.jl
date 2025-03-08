@@ -1,10 +1,12 @@
 include("utilitaries.jl")
 include("structures.jl")
 
-function evaluate(individual::Individual, instance::ProblemInstance, fitness_cache::Dict{UInt64, Individual}, unit_cost::Float64=1.0, delay_cost=2.0, capacity_cost=50.0, late_depot_cost=50.0)::Individual
+function evaluate(individual::Individual, instance::ProblemInstance, fitness_cache::Dict{UInt64, Individual}, locker::ReentrantLock, unit_cost::Float64=1.0, delay_cost=2.0, capacity_cost=50.0, late_depot_cost=50.0,)::Individual
     individual_hash = hash_individual(individual)
-    if haskey(fitness_cache, individual_hash)
-        return fitness_cache[individual_hash]
+    lock(locker) do
+        if haskey(fitness_cache, individual_hash)
+            return fitness_cache[individual_hash]
+        end
     end
     
     total_cost::Float64 = 0
@@ -63,6 +65,8 @@ function evaluate(individual::Individual, instance::ProblemInstance, fitness_cac
         feasability = false
     end
     evaluated_individual = Individual(individual.routes, total_distance, total_cost, total_penalty, feasability)
-    fitness_cache[individual_hash] = evaluated_individual
+    lock(locker) do
+        fitness_cache[individual_hash] = evaluated_individual
+    end
     return evaluated_individual
 end

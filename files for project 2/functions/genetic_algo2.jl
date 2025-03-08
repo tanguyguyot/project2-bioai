@@ -58,14 +58,13 @@ data_instance9 = ProblemInstance(
 )
 
 # GENETIC ALGORITHM 
-function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64}, num_generations::Int=500, population_size::Int=500, tournament_size::Int=3, child_factor::Int=3, mutation_rate::Float64=0.01, penalty_rate=10.0, custom::Bool=false, populations::Vector{Vector{Individual}}=[[Individual([], 0.0, 0.0, 0.0, false)]])::Tuple{Individual, Vector{Individual}, Vector{Float64}, Vector{Float64}, Vector{Float64}}
+function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64}, num_generations::Int=500, population_size::Int=500, tournament_size::Int=3, child_factor::Int=3, mutation_rate::Float64=0.01, penalty_rate=10.0, custom::Bool=false, populations::Vector{Vector{Individual}}=[[Individual([], 0.0, 0.0, 0.0, false)]])
     # Initialize a population
     if custom && !isempty(populations[1])
         population = create_population(instance, population_size, proportion, true, populations)
     else
         population = create_population(instance, population_size, proportion)
     end
-    nb_nurses::Int = instance.nbr_nurses
 
     # Keep track of scores and travel times
     scores = []
@@ -77,38 +76,42 @@ function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64
     feasability_rate = 0.0
     penalty_cost = copy(penalty_rate)
     fitness_cache = Dict{UInt64, Individual}()
+    next_population = []
 
     # Initialize best_solution and a counter for redundancy
     best_solution = Individual([], 0.0, 0.0, 0.0, false)
     same_best_solution_counter = 0
     locker = ReentrantLock()
+    locker_hash = ReentrantLock()
     # Main loop
     for generation in 1:num_generations
-        next_population = deepcopy(population)
+        if generation > 1
+            next_population = deepcopy(population)
+        end
         if same_best_solution_counter % 5 == 4
             println("Same best solution for more than 5 generations, adding diversity")
             next_population = vcat(next_population, [random_solution(instance) for _ in 1:div(population_size, 2)], [position_cluster_solution(instance) for _ in 1:div(population_size, 2)])
         end
         @threads for _ in 1:(child_factor * population_size)
             # Select two parents
-            parent1_idx, parent2_idx = tournament_selection(population, instance, fitness_cache, tournament_size, penalty_cost)
+            parent1_idx, parent2_idx = tournament_selection(population, instance, fitness_cache, locker_hash, tournament_size, penalty_cost)
             parent1 = population[parent1_idx]
             parent2 = population[parent2_idx]
 
             # Crossover
-            child1, child2 = crossover(parent1, parent2, instance, fitness_cache, penalty_cost)
+            child1, child2 = crossover(parent1, parent2, instance, fitness_cache, locker_hash, penalty_cost)
             
             # Mutation ; mutation 7 is less likely to happen so we multiply the probability by 1.5
             mutation_rate > rand() ? mutate4!(child1, instance) : nothing
             mutation_rate > rand() ? mutate5!(child1) : nothing
             mutation_rate > rand() ? mutate6!(child1, instance) : nothing
-            mutation_rate > rand() * 1.5 ? mutate7!(child1) : nothing
-            mutation_rate > rand() ? mutate8!(child1) : nothing
+            mutation_rate > rand() * 2 ? mutate9!(child1) : nothing
+            mutation_rate > rand() ? mutate10!(child1) : nothing
             mutation_rate > rand() ? mutate4!(child2, instance) : nothing
             mutation_rate > rand() ? mutate5!(child2) : nothing
             mutation_rate > rand() ? mutate6!(child2, instance) : nothing 
-            mutation_rate > rand() * 1.5 ? mutate7!(child2) : nothing 
-            mutation_rate > rand() ? mutate8!(child2) : nothing
+            mutation_rate > rand() * 2 ? mutate9!(child2) : nothing 
+            mutation_rate > rand() ? mutate10!(child2) : nothing
             
             # Add to offsprings
             begin
@@ -119,19 +122,18 @@ function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64
                 finally
                     unlock(locker)
                 end
-            end
+            end 
             #push!(next_population, child1)
             #push!(next_population, child2)
         end
         println("End of crossover and mutations for generation $generation")
 
         # Survivor selection by elitism
-        evaluations = [evaluate(sol, instance, fitness_cache, 1.0, max(penalty_cost/10, 0.4), penalty_cost, penalty_cost) for sol in next_population]
+        evaluations = [evaluate(sol, instance, fitness_cache, locker_hash, 1.0, max(penalty_cost/10, 0.4), penalty_cost, penalty_cost) for sol in next_population]
         feasabilities = [individual.feasability for individual in evaluations]
         feasability_rate = sum(feasabilities) / length(feasabilities)
-        feasability_rate > 0 ? println("Feasibility POSITIVE!! ") : println("Feasibility nulle ")
         penalty_cost = 1 + (penalty_rate - 1)*(1 - feasability_rate)
-        population = survivor_selection(evaluations, population_size, tournament_size, penalty_cost)
+        population = survivor_selection(evaluations, population_size, 2, penalty_cost)
         # Keep track of scores and average fitnesses
         previous_best_solution = deepcopy(best_solution)
         best_solution = deepcopy(argmin((x -> x.score), population))
@@ -143,7 +145,10 @@ function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64
         push!(travel_times, best_solution_travel_time)
         avg_fitness = sum(fitnesses) / length(fitnesses)
         push!(average_fitnesses, avg_fitness)
-        print("For generation $generation, best score is $(best_solution_score), travel time of $(best_solution_travel_time), average fitness is $(avg_fitness), feasability rate is $(feasability_rate), penalty cost is $(penalty_cost) \n")
+        print("For generation $generation, best score is $(best_solution_score), travel time of $(best_solution_travel_time), average fitness is $(avg_fitness), feasability rate is $(feasability_rate), penalty cost is $(penalty_cost) \n \n")
+        check_unicity_of_routes(best_solution, instance)
+        output_population(population)
+        plot_routes(best_solution, instance)
     end
     # Return the best solution
     best_solution = argmin((x -> x.score), population)
