@@ -477,7 +477,7 @@ function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64
     # Initialize best_solution and a counter for redundancy
     best_solution = Individual([], 0.0, 0.0, 0.0, false)
     same_best_solution_counter = 0
-    #locker = ReentrantLock()
+    locker = ReentrantLock()
     # Main loop
     for generation in 1:num_generations
         next_population = deepcopy(population)
