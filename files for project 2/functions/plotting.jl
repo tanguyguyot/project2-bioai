@@ -9,14 +9,12 @@ function plot_patient_positions(instance::ProblemInstance)
     scatter(x, y, labels=labels, title="Patient positions", xlabel="x", ylabel="y")
 end
 
-function plot_routes(individual::Individual, instance::ProblemInstance)
+function plot_routes(individual::Individual, instance::ProblemInstance, path_name::String)
     amount_of_unempty_routes = length([route for route in individual.routes if !isempty(route)])
     plot()
     x = [instance.patients[string(patient)]["x_coord"] for patient in 1:length(instance.patients)]
     y = [instance.patients[string(patient)]["y_coord"] for patient in 1:length(instance.patients)]
     scatter!(x, y, title="Patient positions")
-    depot_coords = (instance.depot["x_coord"], instance.depot["y_coord"])
-    scatter!([depot_coords[1]], [depot_coords[2]], ms=5)
     for (i, route) in enumerate(individual.routes)
         # Patients coords
         x = [instance.patients[string(patient)]["x_coord"] for patient in route]
@@ -31,8 +29,11 @@ function plot_routes(individual::Individual, instance::ProblemInstance)
         push!(y, depot_y)
         plot!(x, y, ms=5, legend=false)
     end
-    display(plot!(title="Routes"))
-    println("Plotting $(amount_of_unempty_routes)) routes for a travel time of $(individual.total_travel_time)")
+    depot_coords = (instance.depot["x_coord"], instance.depot["y_coord"])
+    scatter!([depot_coords[1]], [depot_coords[2]], ms=5)
+    plot!(title="Routes")
+    println("Plotting $(amount_of_unempty_routes)) routes for a travel time of $(individual.total_travel_time) \n")
+    savefig("./plots/$path_name")
 end
 
 function plot_travels_over_time(travel_times)

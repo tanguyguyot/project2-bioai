@@ -60,7 +60,6 @@ function mutate6!(individual::Individual, instance::ProblemInstance)
     route_to_insert_idx = rand(setdiff(available_routes, [route_to_remove_idx]))
     # check capacity
     if sum([instance.patients[string(patient)]["demand"] for patient in routes[route_to_insert_idx]]) + instance.patients[string(patient)]["demand"] > capacity
-        println("no capacity")
         return
     end
     # Remove the patient from route_to_remove

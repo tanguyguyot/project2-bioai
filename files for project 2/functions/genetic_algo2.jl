@@ -7,6 +7,7 @@ include("crossover.jl")
 include("initialization.jl")
 include("mutations.jl")
 include("selections.jl")
+include("local_search.jl")
 
 train_data0 = JSON.parsefile("./train/test_0.json")
 train_data1 = JSON.parsefile("./train/test_1.json")
@@ -58,7 +59,7 @@ data_instance9 = ProblemInstance(
 )
 
 # GENETIC ALGORITHM 
-function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64}, num_generations::Int=500, population_size::Int=500, tournament_size::Int=3, child_factor::Int=3, mutation_rate::Float64=0.01, penalty_rate=10.0, custom::Bool=false, populations::Vector{Vector{Individual}}=[[Individual([], 0.0, 0.0, 0.0, false)]])
+function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64}, num_generations::Int=500, population_size::Int=500, tournament_size::Int=3, child_factor::Int=3, mutation_rate::Float64=0.01, penalty_rate=10.0, output_name::String="output.txt", custom::Bool=false, populations::Vector{Vector{Individual}}=[[Individual([], 0.0, 0.0, 0.0, false)]])
     # Initialize a population
     if custom && !isempty(populations[1])
         population = create_population(instance, population_size, proportion, true, populations)
@@ -68,21 +69,20 @@ function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64
 
     # Keep track of scores and travel times
     scores = []
-    feasabilities_record = []
     average_fitnesses = []
     fitnesses = []
     travel_times = []
     feasabilities = []
     feasability_rate = 0.0
+    best_solution_over_time = []
     penalty_cost = copy(penalty_rate)
-    fitness_cache = Dict{UInt64, Individual}()
+    #fitness_cache = Dict{UInt64, Individual}()
     next_population = []
 
     # Initialize best_solution and a counter for redundancy
     best_solution = Individual([], 0.0, 0.0, 0.0, false)
     same_best_solution_counter = 0
     locker = ReentrantLock()
-    locker_hash = ReentrantLock()
     # Main loop
     for generation in 1:num_generations
         if generation > 1
@@ -94,26 +94,30 @@ function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64
         end
         @threads for _ in 1:(child_factor * population_size)
             # Select two parents
-            parent1_idx, parent2_idx = tournament_selection(population, instance, fitness_cache, locker_hash, tournament_size, penalty_cost)
+            # parent1_idx, parent2_idx = tournament_selection(population, instance, fitness_cache, tournament_size, penalty_cost)
+            parent1_idx, parent2_idx = tournament_selection(population, instance, tournament_size, penalty_cost)
             parent1 = population[parent1_idx]
             parent2 = population[parent2_idx]
-
+          
             # Crossover
-            child1, child2 = crossover(parent1, parent2, instance, fitness_cache, locker_hash, penalty_cost)
-            
+            # child1, child2 = crossover(parent1, parent2, instance, fitness_cache, penalty_cost)
+            child1, child2 = crossover(parent1, parent2, instance, penalty_cost)
+
             # Mutation ; mutation 7 is less likely to happen so we multiply the probability by 1.5
+           
             mutation_rate > rand() ? mutate4!(child1, instance) : nothing
             mutation_rate > rand() ? mutate5!(child1) : nothing
             mutation_rate > rand() ? mutate6!(child1, instance) : nothing
-            mutation_rate > rand() * 2 ? mutate9!(child1) : nothing
+            mutation_rate > rand() ? mutate9!(child1) : nothing
             mutation_rate > rand() ? mutate10!(child1) : nothing
             mutation_rate > rand() ? mutate4!(child2, instance) : nothing
             mutation_rate > rand() ? mutate5!(child2) : nothing
             mutation_rate > rand() ? mutate6!(child2, instance) : nothing 
-            mutation_rate > rand() * 2 ? mutate9!(child2) : nothing 
+            mutation_rate > rand() ? mutate9!(child2) : nothing 
             mutation_rate > rand() ? mutate10!(child2) : nothing
             
             # Add to offsprings
+            
             begin
                 lock(locker)
                 try
@@ -123,61 +127,54 @@ function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64
                     unlock(locker)
                 end
             end 
-            #push!(next_population, child1)
-            #push!(next_population, child2)
+            # push!(next_population, child1)
+            # push!(next_population, child2)
         end
         println("End of crossover and mutations for generation $generation")
 
         # Survivor selection by elitism
-        evaluations = [evaluate(sol, instance, fitness_cache, locker_hash, 1.0, max(penalty_cost/10, 0.4), penalty_cost, penalty_cost) for sol in next_population]
+        # evaluations = [evaluate(sol, instance, fitness_cache, 1.0, max(penalty_cost/10, 0.4), penalty_cost, penalty_cost) for sol in next_population]
+        evaluations = [evaluate(sol, instance, 1.0, max(penalty_cost/10, 0.5), penalty_cost, penalty_cost) for sol in next_population]
+        sort!(evaluations, by = x -> x.score)
         feasabilities = [individual.feasability for individual in evaluations]
         feasability_rate = sum(feasabilities) / length(feasabilities)
         penalty_cost = 1 + (penalty_rate - 1)*(1 - feasability_rate)
         population = survivor_selection(evaluations, population_size, 2, penalty_cost)
+        population_has_feasibles = any([individual.feasability for individual in population])
+        # keep one feasible at least
+        if feasability_rate > 0 && !population_has_feasibles
+            for individual in evaluations
+                if individual.feasability
+                    push!(population, individual)
+                    break
+                end
+            end
+        end
         # Keep track of scores and average fitnesses
         previous_best_solution = deepcopy(best_solution)
         best_solution = deepcopy(argmin((x -> x.score), population))
+        # launch a local search every X generations to make the bets solution slightly better
+        if generation % 6 == 5
+            best_solution = local_search(best_solution, instance, penalty_cost)
+        end
         best_solution.routes == previous_best_solution.routes ? same_best_solution_counter += 1 : same_best_solution_counter = 0
         best_solution_score = best_solution.score
         best_solution_travel_time = best_solution.total_travel_time
         fitnesses = [x.score for x in population]
         push!(scores, best_solution_score)
         push!(travel_times, best_solution_travel_time)
+        push!(best_solution_over_time, best_solution)
         avg_fitness = sum(fitnesses) / length(fitnesses)
         push!(average_fitnesses, avg_fitness)
-        print("For generation $generation, best score is $(best_solution_score), travel time of $(best_solution_travel_time), average fitness is $(avg_fitness), feasability rate is $(feasability_rate), penalty cost is $(penalty_cost) \n \n")
+        print("For generation $generation, best score is $(best_solution_score), travel time of $(best_solution_travel_time), average fitness is $(avg_fitness), feasability rate is $(feasability_rate), penalty cost is $(penalty_cost) \n")
         check_unicity_of_routes(best_solution, instance)
-        output_population(population)
-        plot_routes(best_solution, instance)
+        plot_routes(best_solution, instance, "$(output_name)_generation_$(generation).png")
     end
     # Return the best solution
     best_solution = argmin((x -> x.score), population)
+    best_feasible_solution = argmin((x -> x.score), [x for x in population if x.feasability])
+    output_population(population, output_name)
     println("Best score found : $(best_solution)\n")
-    return best_solution, population, fitnesses, scores, average_fitnesses, travel_times
+    plot_routes(best_feasible_solution, instance, "$(output_name)_best_feasible.png")
+    return best_solution, best_feasible_solution, population, fitnesses, scores, average_fitnesses, travel_times, best_solution_over_time
 end
-## MAIN ##
-
-
-# Test data 0
-# best_solution0, population0, fitnesses0, scores0, average_fitnesses0 = genetic_algorithm(data_instance0, [0.5, 0.5, 0.0], 500, 1000, 3, 4, 0.1, 10.0)
-
-# Test data 1
-# best_solution1, population1, fitnesses1, scores1, average_fitnesses1 = genetic_algorithm(data_instance1, [0.5, 0.5, 0.0], 500, 1000, 3, 4, 0.1, 10.0)
-
-# Test data 2
-# best_solution2, population2, fitnesses2, scores2, average_fitnesses2 = genetic_algorithm(data_instance2, [0.5, 0.5, 0.0], 500, 1000, 3, 4, 0.1, 10.0)
-
-# Train data 9
-# best_solution9, population9, fitnesses9, scores9, average_fitnesses9 = genetic_algorithm(data_instance9, [0.5, 0.5, 0.0], 500, 1000, 3, 4, 0.1, 10.0)
-# Plot functions
-
-# Testing island niching
-
-#=
-best_solution91, population91, fitnesses91, scores91, average_fitnesses91 = genetic_algorithm(data_instance9, [1.0, 0, 0.0], 100, 300 , 3, 4, 0.1, 10.0)
-best_solution92, population92, fitnesses92, scores92, average_fitnesses92 = genetic_algorithm(data_instance9, [0.0, 1.0, 0.0], 100, 300, 3, 4, 0.1, 10.0)
-best_solution93, population93, fitnesses93, scores93, average_fitnesses93 = genetic_algorithm(data_instance9, [0.0, 0.0, 1.0], 100, 300, 3, 4, 0.1, 10.0)
-
-best_solution90, population90, fitnesses90, scores90, average_fitnesses90 = genetic_algorithm(data_instance9, [0.5, 0.5, 0.0], 100, 900, 3, 4, 0.05, 10.0, true, [population91, population92, population93])
-BEST : 1562
-=# 

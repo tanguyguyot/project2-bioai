@@ -20,7 +20,7 @@ function get_travel_time(i::Int, j::Int, instance::ProblemInstance)
 end
 
 # Inserts a patient to the best neighbour according to evaluate function
-function insert_to_best_neighbour!(patient::Int64, individual::Individual, instance::ProblemInstance, fitness_cache::Dict{UInt64, Individual}, locker::ReentrantLock, penalty_cost::Float64=350.0)
+function insert_to_best_neighbour!(patient::Int64, individual::Individual, instance::ProblemInstance, penalty_cost::Float64=350.0)
     routes = copy(individual.routes)
     available_routes = [i for i in 1:length(routes) if !isempty(routes[i])]
     lowest_score = Inf
@@ -33,7 +33,8 @@ function insert_to_best_neighbour!(patient::Int64, individual::Individual, insta
             insert!(candidate_route, position, patient)
             # check in hashmap
             individual_hash = hash_individual(individual)
-            score = haskey(fitness_cache, individual_hash) ? score = fitness_cache[individual_hash].score : evaluate(Individual([candidate_route], 0.0, 0.0, 0.0, false), instance, fitness_cache, locker, 1.0, max(div(penalty_cost, 10), 1.0), penalty_cost, penalty_cost).score
+            # score = haskey(fitness_cache, individual_hash) ? score = fitness_cache[individual_hash].score : evaluate(Individual([candidate_route], 0.0, 0.0, 0.0, false), instance, fitness_cache, 1.0, max(div(penalty_cost, 10), 1.0), penalty_cost, penalty_cost).score
+            score = evaluate(Individual([candidate_route], 0.0, 0.0, 0.0, false), instance, 1.0, max(div(penalty_cost, 10), 1.0), penalty_cost, penalty_cost).score
             if score < lowest_score
                 lowest_score = score
                 best_neighbour_idx = position
@@ -92,8 +93,15 @@ function insert_to_closest_neighbour!(patient::Int64, individual::Individual, in
     end
 end
 
-function output_population(population::Vector{Individual})
-    open("last_population.txt", "w") do io
+function output_population(population::Vector{Individual}, output_name::String="output.txt")
+    open("./outputs/$output_name.txt", "w") do io
         println(io, population)
+    end
+end
+
+# to log everything, not really pretty but whatever
+function output_all_solution(sol, output_name)
+    open("./outputs/solutions_$output_name.txt", "a") do io
+        println(io, sol)
     end
 end

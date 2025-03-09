@@ -4,36 +4,68 @@ include("plotting.jl")
 Random.seed!(1234)
 
 # 70 generations a 500 individus : 92 s
-#best_solution9, population9, fitnesses9, scores9, average_fitnesses9, travel_times9 = genetic_algorithm(data_instance9, [0.3, 0.7, 0], 100, 600, 3, 4, 0.15, 15.0)
+# sol is (best_solution0, population0, fitnesses0, scores0, average_fitnesses0, travel_times0)
+# sol9_twc = @time genetic_algorithm(data_instance9, [0, 0, 1.0], 20, 100, 3, 4, 0.15, 50.0)
 
-#plot_routes(best_solution9, data_instance9)
-#plot(travel_times9)
+# NICHING ON SOL9
+@time begin
+    @time sol9_1 = genetic_algorithm(data_instance9, [0.3, 0.7, 0], 50, 125, 3, 4, 0.15, 300.0, "output9_1")
+    @time sol9_2 = genetic_algorithm(data_instance9, [0.7, 0.3, 0], 50, 125, 3, 4, 0.15, 300.0, "output9_2")
+    @time sol9_3 = genetic_algorithm(data_instance9, [0.0, 0.0, 1.0], 50, 125, 3, 4, 0.15, 300.0, "output9_3")
+    @time sol9 = genetic_algorithm(data_instance9, [0.5, 0.5, 0], 30, 375, 3, 4, 0.15, 500.0, "output9", true, [sol9_1[3], sol9_2[3], sol9_3[3]])
+plot(sol9[6])
+end
 #=
-best_solution0, population0, fitnesses0, scores0, average_fitnesses0, travel_times0 = genetic_algorithm(data_instance0, [0.3, 0.7, 0.0], 100, 600, 3, 4, 0.1, 10.0)
-best_solution1, population1, fitnesses1, scores1, average_fitnesses1, travel_times1 = genetic_algorithm(data_instance1, [0.3, 0.7, 0.0], 100, 600, 3, 4, 0.1, 10.0)
-best_solution2, population2, fitnesses2, scores2, average_fitnesses2, travel_times2 = genetic_algorithm(data_instance2, [0.3, 0.7, 0.0], 100, 600, 3, 4, 0.1, 10.0)
+
+@time begin
+    # sol0_1 = genetic_algorithm(data_instance0, [0.3, 0.7, 0], 50, 100, 3, 4, 0.15, 300.0, "output0_1")
+    # sol0_2 = genetic_algorithm(data_instance0, [0.7, 0.3, 0], 50, 100, 3, 4, 0.15, 300.0, "output0_2")
+    # sol0_3 = genetic_algorithm(data_instance0, [0.0, 0.0, 1.0], 50, 100, 3, 4, 0.15, 300.0, "output0_3")
+    # time for sol0 (25, 300) : approx. 8 min ; score : 828.9368669428338 (best, near 826 benchmark)
+    @time sol0 = genetic_algorithm(data_instance0, [0.5, 0.5, 0], 25, 300, 3, 4, 0.15, 500.0, "output0", true, [sol0_1[3], sol0_2[3], sol0_3[3]])
+end
+
+plot(sol0[5], label="Average fitness")
+plot!(sol0[7], label="Best solution fitness")
+
+
+
+# total time : 568 s
+@time begin
+    # time :
+    #@time sol1_1 = genetic_algorithm(data_instance1, [0.3, 0.7, 0], 50, 100, 3, 4, 0.15, 300.0, "output1_1")
+    # time : 
+    #@time sol1_2 = genetic_algorithm(data_instance1, [0.7, 0.3, 0], 50, 100, 3, 4, 0.15, 300.0, "output1_2")
+    # time :
+    #@time sol1_3 = genetic_algorithm(data_instance1, [0.0, 0.0, 1.0], 50, 100, 3, 4, 0.15, 300.0, "output1_3")
+    # time : 212 s ; score of 1659.1448976431811 (je pense on peut mettre plus d'itérations) ; benchmark 1514 donc on est entre 5 et 10%
+    @time sol1 = genetic_algorithm(data_instance1, [0.5, 0.5, 0], 30, 300, 3, 4, 0.15, 500.0, "output1", true, [sol1_1[3], sol1_2[3], sol1_3[3]])
+end
+
+plot(sol1[5], label="Average fitness")
+plot!(sol1[7], label="Best solution fitness")
+output_all_solution(sol1, "output11")
 =#
 
-# Test data 0
-# best_solution0, population0, fitnesses0, scores0, average_fitnesses0 = genetic_algorithm(data_instance0, [0.5, 0.5, 0.0], 500, 1000, 3, 4, 0.1, 10.0)
-
-# Test data 1
-# best_solution1, population1, fitnesses1, scores1, average_fitnesses1 = genetic_algorithm(data_instance1, [0.5, 0.5, 0.0], 500, 1000, 3, 4, 0.1, 10.0)
-
-# Test data 2
-# best_solution2, population2, fitnesses2, scores2, average_fitnesses2 = genetic_algorithm(data_instance2, [0.5, 0.5, 0.0], 500, 1000, 3, 4, 0.1, 10.0)
-
-# Train data 9
-# best_solution9, population9, fitnesses9, scores9, average_fitnesses9 = genetic_algorithm(data_instance9, [0.5, 0.5, 0.0], 500, 1000, 3, 4, 0.1, 10.0)
-# Plot functions
-
-# Testing island niching
-
+# time : 4422 s soit 73 min (une heure 13 min)
 #=
-best_solution91, population91, fitnesses91, scores91, average_fitnesses91 = genetic_algorithm(data_instance9, [1.0, 0, 0.0], 100, 300 , 3, 4, 0.1, 10.0)
-best_solution92, population92, fitnesses92, scores92, average_fitnesses92 = genetic_algorithm(data_instance9, [0.0, 1.0, 0.0], 100, 300, 3, 4, 0.1, 10.0)
-best_solution93, population93, fitnesses93, scores93, average_fitnesses93 = genetic_algorithm(data_instance9, [0.0, 0.0, 1.0], 100, 300, 3, 4, 0.1, 10.0)
+@time begin
+    println("Data instance 2, niche 1")
+    @time sol2_1 = genetic_algorithm(data_instance2, [0.3, 0.7, 0], 50, 150, 3, 4, 0.15, 300.0, "output2_1")
+    println("Data instance 2, niche 2")
+    #time : 739 s ; score 1013
+    @time sol2_2 = genetic_algorithm(data_instance2, [0.7, 0.3, 0], 50, 150, 3, 4, 0.15, 300.0, "output2_2")
+    println("Data instance 2, niche 3")
+    # time : 739 s ; score : 959.971987
+    @time sol2_3 = genetic_algorithm(data_instance2, [0.0, 0.0, 1.0], 50, 150, 3, 4, 0.15, 300.0, "output2_3")
+    println("Data instance 2, island merge")
+    # time : 1153 s ; 1002
+    @time sol2 = genetic_algorithm(data_instance2, [0.5, 0.5, 0], 30, 450, 3, 4, 0.15, 500.0, "output2", true, [sol2_1[3], sol2_2[3], sol2_3[3]])
+    # time : 1789s ; score 955.7316093300215
+end
 
-best_solution90, population90, fitnesses90, scores90, average_fitnesses90 = genetic_algorithm(data_instance9, [0.5, 0.5, 0.0], 100, 900, 3, 4, 0.05, 10.0, true, [population91, population92, population93])
-BEST : 1562
-=# 
+plot(sol2[5], label="Average fitness")
+plot!(sol2[7], label="Best solution fitness")
+output_all_solution(sol2, "output20")
+
+=#
