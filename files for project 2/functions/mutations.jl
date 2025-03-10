@@ -69,7 +69,7 @@ function mutate6!(individual::Individual, instance::ProblemInstance)
     insert!(individual.routes[route_to_insert_idx], rand(1:length(routes[route_to_insert_idx])), patient)
 end
 
-# This mutation splits a route into two, and puts half of the patients in a new route
+# This mutation splits a route into two, and puts half of the patients in a new route sequentially ; deprecated
 function mutate7!(individual::Individual)
     routes = copy(individual.routes)
     nb_nurses = length(routes)
@@ -88,7 +88,7 @@ function mutate7!(individual::Individual)
     end
 end
 
-# This mutate will merge two routes
+# This mutate will merge two routes sequentially ; deprecated
 function mutate8!(individual::Individual)
     routes = copy(individual.routes)
     nb_nurses = length(routes)

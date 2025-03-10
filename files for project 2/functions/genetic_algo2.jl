@@ -103,8 +103,7 @@ function genetic_algorithm(instance::ProblemInstance, proportion::Vector{Float64
             # child1, child2 = crossover(parent1, parent2, instance, fitness_cache, penalty_cost)
             child1, child2 = crossover(parent1, parent2, instance, penalty_cost)
 
-            # Mutation ; mutation 7 is less likely to happen so we multiply the probability by 1.5
-           
+           # Mutations ; 7 and 8 are deprecated
             mutation_rate > rand() ? mutate4!(child1, instance) : nothing
             mutation_rate > rand() ? mutate5!(child1) : nothing
             mutation_rate > rand() ? mutate6!(child1, instance) : nothing

@@ -8,24 +8,7 @@ struct ProblemInstance
     capacity_nurse::Int
     travel_time_matrix::Vector{Any}
 end
-#=
-struct Patient
-    id::Int
-    x_coord::Int
-    y_coord::Int
-    demand::Int
-    start_time::Int
-    end_time::Int
-    care_time::Int
-end
 
-struct Solution
-    routes::Vector{Vector{Int}}  # Each route is a list of patient indices
-    total_travel_time::Float64    # The total travel time
-    score::Float64                # The total score of the solution
-    penalties::Float64           # The total penalties of the solution
-end
-=#
 mutable struct Individual
     routes::Vector{Vector{Int}}  # Each route is a list of patient indices
     total_travel_time::Float64    # The total travel time

@@ -21,7 +21,6 @@ end
 
 
 # Survival selection
-
 function survivor_selection(population_fitnessed::Vector{Individual}, population_size::Int, tournament_size::Int=3, penalty_cost::Float64=10.0)::Vector{Individual}
     # population_fitnessed is already sorted in main GA loop
     elite_count = div(population_size, 10)

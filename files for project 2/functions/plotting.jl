@@ -1,7 +1,7 @@
 include("utilitaries.jl")
 include("structures.jl")
 
-
+# Plot only patient positions
 function plot_patient_positions(instance::ProblemInstance)
     x = [instance.patients[string(patient)]["x_coord"] for patient in 1:length(instance.patients)]
     y = [instance.patients[string(patient)]["y_coord"] for patient in 1:length(instance.patients)]
@@ -9,6 +9,7 @@ function plot_patient_positions(instance::ProblemInstance)
     scatter(x, y, labels=labels, title="Patient positions", xlabel="x", ylabel="y")
 end
 
+# Plot routes of a solution with patient positions
 function plot_routes(individual::Individual, instance::ProblemInstance, path_name::String)
     amount_of_unempty_routes = length([route for route in individual.routes if !isempty(route)])
     
@@ -45,12 +46,14 @@ function plot_routes(individual::Individual, instance::ProblemInstance, path_nam
     savefig("./plots/$path_name")
 end
 
+# Graph of the travel time over generations
 function plot_travels_over_time(travel_times, output_name::String)
     plot()
     display(plot!((travel_times), title="Travel time over generations", xlabel="Generation", ylabel="Travel time", legend=false, color=:blue))
     savefig("./plots/$(output_name)_travels_over_time.png")
 end
 
+# Graph of best solution score over generations (score = travel time + penalty)
 function plot_best_solution_over_time(list, output_name::String)
     plot()
     scores = [x.score for x in list]

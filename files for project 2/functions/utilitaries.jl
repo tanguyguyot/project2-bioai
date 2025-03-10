@@ -34,8 +34,8 @@ function insert_to_best_neighbour!(patient::Int64, individual::Individual, insta
             candidate_route = copy(routes[route_idx])
             # Insert patient in the route
             insert!(candidate_route, position, patient)
-            # check in hashmap
-            individual_hash = hash_individual(individual)
+            # check in hashmap : deprecated
+            # individual_hash = hash_individual(individual)
             # score = haskey(fitness_cache, individual_hash) ? score = fitness_cache[individual_hash].score : evaluate(Individual([candidate_route], 0.0, 0.0, 0.0, false), instance, fitness_cache, 1.0, max(div(penalty_cost, 10), 1.0), penalty_cost, penalty_cost).score
             score = evaluate(Individual([candidate_route], 0.0, 0.0, 0.0, false), instance, 1.0, max(div(penalty_cost, 10), 1.0), penalty_cost, penalty_cost).score
             if score < lowest_score
@@ -96,27 +96,29 @@ function insert_to_closest_neighbour!(patient::Int64, individual::Individual, in
     end
 end
 
+# output the whole population in a file
 function output_population(population::Vector{Individual}, output_name::String="output.txt")
     open("./outputs/$output_name.txt", "w") do io
         println(io, population)
     end
 end
 
-# to log everything, not really pretty but whatever
+# to log everything
 function output_all_solution(sol, output_name)
     open("./outputs/solutions_$output_name.txt", "a") do io
         println(io, sol)
     end
 end
 
+# output a solution in the right format for the project delivery
 function output_solution(individual::Individual, instance::ProblemInstance, filename::String)
     open("./outputs/$(filename)_formatted_solution.txt", "w") do io
-        # Écrire la capacité de l'infirmière et le temps de retour au dépôt
+        # Capacity and time to return to depot
         println(io, "Nurse capacity : $(instance.capacity_nurse)")
         println(io, "Depot return time : $(instance.depot["return_time"])")
         println(io, "-"^100)
 
-        # Parcourir chaque route de l'individu
+        # For each individual route
         for (i, route) in enumerate(individual.routes)
             route_duration = 0.0
             nurse_demand = 0
@@ -138,13 +140,13 @@ function output_solution(individual::Individual, instance::ProblemInstance, file
                 last_patient_id = patient_id
             end
 
-            # Ajouter le retour au dépôt
+            # Back to depot
             travel_time = get_travel_time(last_patient_id, 0, instance)
             arrival_time = elapsed_time + travel_time
             route_str *= "D($(arrival_time))"
             route_duration += travel_time
 
-            # Écrire les informations de la route
+            # Route informations
             println(io, "Nurse $(i) (N$(i))\t$(route_duration)\t$(nurse_demand)\t$(route_str)")
         end
 
