@@ -1,9 +1,11 @@
 include("structures.jl")
 
+# Deprecated
 function hash_individual(individual::Individual)::UInt64
     return hash(individual.routes)
 end
 
+# Testing function used to verify that everything goes well.
 function check_unicity_of_routes(individual::Individual, instance::ProblemInstance)::Bool
     routes = vcat(individual.routes...)
     if sum(routes) != sum(1:length(instance.patients))
@@ -13,6 +15,7 @@ function check_unicity_of_routes(individual::Individual, instance::ProblemInstan
     return true
 end
 
+# Returns the travel time between two patients
 function get_travel_time(i::Int, j::Int, instance::ProblemInstance)
     travel_time_matrix = instance.travel_time_matrix
     # adds +1 because of the depot which is 0
@@ -45,7 +48,7 @@ function insert_to_best_neighbour!(patient::Int64, individual::Individual, insta
     insert!(individual.routes[best_route_idx], best_neighbour_idx, patient)
 end
 
-# Inserts a patient to the best neighbours ; also checks if have capacity ; outdated for now
+# Inserts a patient to the best neighbours ; also checks if have capacity ; deprecated for now
 function insert_to_closest_neighbour!(patient::Int64, individual::Individual, instance::ProblemInstance)
     routes = copy(individual.routes)
     lowest_distance = Inf
@@ -103,5 +106,49 @@ end
 function output_all_solution(sol, output_name)
     open("./outputs/solutions_$output_name.txt", "a") do io
         println(io, sol)
+    end
+end
+
+function output_solution(individual::Individual, instance::ProblemInstance, filename::String)
+    open("./outputs/$(filename)_formatted_solution.txt", "w") do io
+        # Écrire la capacité de l'infirmière et le temps de retour au dépôt
+        println(io, "Nurse capacity : $(instance.capacity_nurse)")
+        println(io, "Depot return time : $(instance.depot["return_time"])")
+        println(io, "-"^100)
+
+        # Parcourir chaque route de l'individu
+        for (i, route) in enumerate(individual.routes)
+            route_duration = 0.0
+            nurse_demand = 0
+            route_str = "D(0) -> "
+            last_patient_id = 0
+            elapsed_time = 0.0
+
+            for patient_id in route
+                patient = instance.patients[string(patient_id)]
+                travel_time = get_travel_time(last_patient_id, patient_id, instance)
+                arrival_time = elapsed_time + travel_time
+                departure_time = arrival_time + patient["care_time"]
+                time_window_start = patient["start_time"]
+                time_window_end = patient["end_time"]
+                route_str *= "$(patient_id)($(arrival_time) - $(departure_time)) [$(time_window_start) - $(time_window_end)] -> "
+                route_duration += travel_time
+                elapsed_time = departure_time
+                nurse_demand += patient["demand"]
+                last_patient_id = patient_id
+            end
+
+            # Ajouter le retour au dépôt
+            travel_time = get_travel_time(last_patient_id, 0, instance)
+            arrival_time = elapsed_time + travel_time
+            route_str *= "D($(arrival_time))"
+            route_duration += travel_time
+
+            # Écrire les informations de la route
+            println(io, "Nurse $(i) (N$(i))\t$(route_duration)\t$(nurse_demand)\t$(route_str)")
+        end
+
+        println(io, "-"^100)
+        println(io, "Objective value (total duration): $(individual.total_travel_time)")
     end
 end

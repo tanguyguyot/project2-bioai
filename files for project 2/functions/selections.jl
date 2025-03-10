@@ -29,7 +29,7 @@ function survivor_selection(population_fitnessed::Vector{Individual}, population
     tournament_pop = []
     remaining_count = population_size - elite_count
     for _ in 1:remaining_count
-        selected_individuals = rand(population_fitnessed[elite_count+1:end], tournament_size)
+        selected_individuals = rand(setdiff(population_fitnessed[elite_count+1:end], tournament_pop), tournament_size)
         winner = argmin(x -> x.score, selected_individuals)
         push!(tournament_pop, winner)
     end
