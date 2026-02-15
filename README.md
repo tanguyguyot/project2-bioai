@@ -62,16 +62,21 @@ Each instance contains:
 
 The algorithm was implemented in **Julia 1.11**.
 
-It follows a modular architecture:
+It follows a modular architecture under `functions/`:
 
 ```
-structures.jl
-utilitaries.jl
-initialization.jl
-crossover.jl
-mutations.jl
-selections.jl
-local_search.jl
+functions/
+├── structures.jl
+├── utilitaries.jl
+├── initialization.jl
+├── crossover.jl
+├── mutations.jl
+├── selections.jl
+├── local_search.jl
+├── genetic_algo2.jl
+├── plotting.jl
+├── run_experiments.jl  # DRY wrapper for experiment orchestration
+└── main.jl
 ```
 
 ---
@@ -253,20 +258,25 @@ The following animation shows how a route evolves during the genetic optimizatio
 
 ```
 .
-├── src/
-│   ├── structures.jl
-│   ├── initialization.jl
-│   ├── crossover.jl
-│   ├── mutations.jl
-│   ├── selections.jl
-│   ├── local_search.jl
+├── functions/
+│   ├── structures.jl          # Data types (ProblemInstance, Individual, etc.)
+│   ├── utilitaries.jl         # Output and utility functions
+│   ├── initialization.jl     # Population initialization strategies
+│   ├── crossover.jl          # Route-based crossover operators
+│   ├── mutations.jl          # Mutation operators
+│   ├── selections.jl         # Tournament selection
+│   ├── local_search.jl       # Local search improvements
+│   ├── genetic_algo2.jl      # Main GA implementation
+│   ├── plotting.jl           # Visualization functions
+│   ├── run_experiments.jl    # Experiment orchestration (DRY wrapper)
+│   └── main.jl               # Entry point
 │
 ├── instances/
 ├── images/
 │   ├── test0.png
 │   ├── test1.png
 │   ├── test2.png
-│   ├── evolution.gif
+│   └── evolution.gif
 │
 └── README.md
 ```
@@ -276,7 +286,24 @@ The following animation shows how a route evolves during the genetic optimizatio
 # 🚀 How to Run
 
 ```bash
-julia main.jl instance.json
+cd functions
+julia main.jl
+```
+
+The algorithm will:
+
+- Run 3 niche GA configurations per data instance
+- Merge populations and run final optimization phase
+- Log best score per generation
+- Output best solutions
+- Generate route plots
+
+---
+
+# 🚀 How to Run
+
+```bash
+julia main.jl
 ```
 
 The algorithm will:
